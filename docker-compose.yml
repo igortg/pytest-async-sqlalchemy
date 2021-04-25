@@ -1,0 +1,7 @@
+services:
+  db:
+    image: postgres:12.6
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: masterkey
