@@ -4,7 +4,7 @@ import sys
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.engine import make_url
+from sqlalchemy.engine import make_url, URL
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
 from sqlalchemy.orm import sessionmaker
 
@@ -34,14 +34,14 @@ def event_loop():
 
 
 @pytest.fixture(scope="session")
-def _database_url(database_url, request):
+def _database_url(database_url, request) -> URL:
     url = request.config.getoption("database_url") or database_url
-    return url
+    return make_url(url)
 
 
-async def create_database(database_url):
-    database_name = make_url(database_url).database
-    dbms_url = database_url.replace("/" + database_name, "")
+async def create_database(url: URL):
+    database_name = url.database
+    dbms_url = url.set(database="")
     engine = create_async_engine(dbms_url, isolation_level="AUTOCOMMIT")
 
     async with engine.connect() as conn:
@@ -51,7 +51,7 @@ async def create_database(database_url):
         database_exists = c.scalar() == 1
 
     if database_exists:
-        await drop_database(database_url)
+        await drop_database(url)
 
     async with engine.connect() as conn:
         await conn.execute(
@@ -59,9 +59,8 @@ async def create_database(database_url):
         )
 
 
-async def drop_database(database_url):
-    database_name = make_url(database_url).database
-    dbms_url = database_url.replace("/" + database_name, "")
+async def drop_database(url: URL):
+    dbms_url = url.set(database="")
     engine = create_async_engine(dbms_url, isolation_level="AUTOCOMMIT")
     async with engine.connect() as conn:
         disc_users = """
@@ -71,11 +70,11 @@ async def drop_database(database_url):
           AND %(pid_column)s <> pg_backend_pid();
         """ % {
             "pid_column": "pid",
-            "database": database_name,
+            "database": url.database,
         }
         await conn.execute(text(disc_users))
 
-        await conn.execute(text(f'DROP DATABASE "{database_name}"'))
+        await conn.execute(text(f'DROP DATABASE "{url.database}"'))
 
 
 @pytest.fixture(scope="session")
@@ -94,17 +93,18 @@ async def _engine(_database_url, event_loop, init_database):
 
 
 @pytest.fixture(scope="function")
-async def function_scoped_database(_database_url) -> AsyncEngine:
+async def function_scoped_database(_database_url, init_database) -> AsyncEngine:
     """
     This fixture creates a new database just for the test function being run (instead of
     using the same database for the entire test session).
     """
-    function_scoped_database_url = _database_url + "_function_scoped"
+    new_database_name = _database_url.database + "_function_scoped"
+    function_scoped_database_url = _database_url.set(database=new_database_name)
     await create_database(function_scoped_database_url)
 
     engine = create_async_engine(function_scoped_database_url)
     async with engine.begin() as conn:
-        await conn.run_sync(metadata.create_all)
+        await conn.run_sync(init_database)
 
     try:
         yield engine
@@ -114,17 +114,18 @@ async def function_scoped_database(_database_url) -> AsyncEngine:
 
 
 @pytest.fixture(scope="function")
-async def database(_database_url) -> str:
+async def database(_database_url, init_database) -> str:
     """
-    This fixture creates a new database just for the test function being run (instead of
-    using the same database for the entire test session).
+    This fixture creates a new database just for the test function being run.
     """
-    database_url = _database_url + "_function_scoped"
+    database_url = _database_url.set(
+        database=_database_url.database + "_function_scoped"
+    )
     await create_database(database_url)
 
     engine = create_async_engine(database_url)
     async with engine.begin() as conn:
-        await conn.run_sync(metadata.create_all)
+        await conn.run_sync(init_database)
     await engine.dispose()
 
     try:
