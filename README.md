@@ -11,7 +11,33 @@ You can install "pytest-async-sqlalchemy" via [pip] from [PyPI]
 
 ## Setup
 
-`pytest-async-sqlalchemy` provides placeholders to configure and initialize
+### Providing a Session Scoped Event Loop
+
+The first thing to do is to declare an `even_loop` fixture  with the scope set as "session". 
+You can copy & paste the code below to your `conftest.py`:
+
+    @pytest.fixture(scope="session")
+    def event_loop():
+        """
+        Creates an instance of the default event loop for the test session.
+        """
+        if sys.platform.startswith("win") and sys.version_info[:2] >= (3, 8):
+            # Avoid "RuntimeError: Event loop is closed" on Windows when tearing down tests
+            # https://github.com/encode/httpx/issues/914
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+        loop = asyncio.new_event_loop()
+        yield loop
+        loop.close()
+
+This is required since **pytest-async-sqlalchemy** shares the database connection between tests
+for performance reasons, but the default `even_loop` fixture defined by 
+[pytest-asyncio](http://pypi.org/project/pytest-asyncio) is function scoped<sup>1</sup> (i.e., it 
+kills the database connection after each test). 
+
+### Providing Database URL and Initialization
+
+**pytest-async-sqlalchemy** provides placeholders to configure and initialize
 the testing database: `database_url` and `init_database`. These two **must** be
 defined in your project `conftest.py` like below:
 
@@ -54,3 +80,10 @@ Distributed under the terms of the [MIT] license, "pytest-async-sqlalchemy" is f
 [PyPI]: https://pypi.org/project
 [MIT]: http://opensource.org/licenses/MIT
 [tox]: https://tox.readthedocs.io/en/latest/
+
+---
+
+<small>1. **pytest-async-sqlalchemy** can't provide its own `even_loop` since pytest plugins are not 
+able to override fixtures from one another. So the only solution we have now is to aks the user to
+declare its own `event_loop` fixture. Suggestions on how to overcome that in a better way are 
+welcome, hit us on the Issues section.</small>

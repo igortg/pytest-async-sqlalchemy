@@ -19,21 +19,6 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """
-    Creates an instance of the default event loop for the test session.
-    """
-    if sys.version_info[:2] >= (3, 8) and sys.platform.startswith("win"):
-        # Avoid "RuntimeError: Event loop is closed" on Windows when tearing down tests
-        # https://github.com/encode/httpx/issues/914
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
 def _database_url(database_url, request) -> URL:
     url = request.config.getoption("database_url") or database_url
     return make_url(url)
