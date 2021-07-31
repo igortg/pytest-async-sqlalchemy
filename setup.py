@@ -8,7 +8,7 @@ readme_file = Path('README.md')
 
 setup(
     name='pytest-async-sqlalchemy',
-    version='0.1.2',
+    version='0.1.3',
     author='Igor T. Ghisi',
     author_email='igor.ghisi@gmail.com',
     maintainer='Igor T. Ghisi',
