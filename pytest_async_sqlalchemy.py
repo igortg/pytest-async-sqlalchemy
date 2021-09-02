@@ -26,7 +26,7 @@ def _database_url(database_url, request) -> URL:
 
 async def create_database(url: URL):
     database_name = url.database
-    dbms_url = url.set(database="")
+    dbms_url = url.set(database="postgres")
     engine = create_async_engine(dbms_url, isolation_level="AUTOCOMMIT")
 
     async with engine.connect() as conn:
@@ -45,7 +45,7 @@ async def create_database(url: URL):
 
 
 async def drop_database(url: URL):
-    dbms_url = url.set(database="")
+    dbms_url = url.set(database="postgres")
     engine = create_async_engine(dbms_url, isolation_level="AUTOCOMMIT")
     async with engine.connect() as conn:
         disc_users = """
