@@ -42,7 +42,7 @@ the testing database: `database_url` and `init_database`. These two **must** be
 defined in your project `conftest.py` like below:
 
     @pytest.fixture(scope="session")
-    def database_url():
+    def _database_url():
         return "postgresql+asyncpg://postgres:masterkey@localhost/dbtest"
     
     
@@ -52,20 +52,21 @@ defined in your project `conftest.py` like below:
     
         return metadata.create_all
 
-The `database_url` must be a session-scoped fixture that returns the database URI.
-`init_database` must also be a session-scoped fixture that returns the callable used
-to initialize the database (in most cases, this would return the 
+The `_database_url` must be a session-scoped fixture that returns the database URL in
+SQLAlchemy standard. `init_database` must also be a session-scoped fixture that returns
+the callable used to initialize the database (in most cases, this would return the 
 `metadata.create_all` function).    
 
 ## Usage
 
 This plugin provides the following fixtures:
 
-- `dbsession`: An `AsyncSession` object bounded to the test database. Database changes
-  are discarded after each test function, so the same database is used for the entire 
-  test suite (avoiding the overhead of initializing a database on every test).
-- `database`: `database` provides a new database within the scope of the test function. 
-  The value of the fixture is a string URL pointing to the database.
+- `db_session`: An `AsyncSession` object bounded to the test session database. Database 
+  transactions are discarded after each test function, so the same database is used for 
+  the entire test suite (avoiding the overhead of initializing a database on every test).
+- `database`: An URL to the initialized test session database.
+- `scoped_database`: `scoped_database` provides a new database within the scope of the
+  test function. The value of the fixture is a string URL pointing to the database.
 
 ## Contributing
 
