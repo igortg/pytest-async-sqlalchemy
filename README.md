@@ -13,7 +13,7 @@ You can install "pytest-async-sqlalchemy" via [pip] from [PyPI]
 
 ### Providing a Session Scoped Event Loop
 
-The first thing to do is to declare an `even_loop` fixture  with the scope set as "session". 
+The first thing to do is to declare an `event_loop` fixture  with the scope set as "session". 
 You can copy & paste the code below to your `conftest.py`:
 
     @pytest.fixture(scope="session")
@@ -31,7 +31,7 @@ You can copy & paste the code below to your `conftest.py`:
         loop.close()
 
 This is required since **pytest-async-sqlalchemy** shares the database connection between tests
-for performance reasons, but the default `even_loop` fixture defined by 
+for performance reasons, but the default `event_loop` fixture defined by 
 [pytest-asyncio](http://pypi.org/project/pytest-asyncio) is function scoped<sup>1</sup> (i.e., it 
 kills the database connection after each test). 
 
@@ -84,7 +84,7 @@ Distributed under the terms of the [MIT] license, "pytest-async-sqlalchemy" is f
 
 ---
 
-<small>1. **pytest-async-sqlalchemy** can't provide its own `even_loop` since pytest plugins are not 
+<small>1. **pytest-async-sqlalchemy** can't provide its own `event_loop` since pytest plugins are not 
 able to override fixtures from one another. So the only solution we have now is to aks the user to
 declare its own `event_loop` fixture. Suggestions on how to overcome that in a better way are 
 welcome, hit us on the Issues section.</small>
